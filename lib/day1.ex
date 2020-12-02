@@ -1,7 +1,7 @@
 defmodule Day1 do
   def problem1(input) do
     lookup =
-      str
+      input
       |> String.split()
       |> Enum.map(&String.to_integer/1)
       |> Enum.map(& {&1, 2020-&1})
@@ -36,7 +36,7 @@ defmodule Day1 do
   end
 
   defp input(str) do
-    input
+    str
     |> Input.clean()
     |> Enum.map(&String.to_integer/1)
   end
