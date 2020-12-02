@@ -42,8 +42,6 @@ defmodule Day2 do
     # We need to reduce the indexes by 1 since the password validator is 1 indexed.
     i = i-1
     j = j-1
-    chars = String.graphemes(password)
-    (Enum.at(chars, i) == char && Enum.at(chars, j) != char) ||
-    (Enum.at(chars, j) == char && Enum.at(chars, i) != char)
+    :erlang.xor(String.at(password, i) == char, String.at(password, j) == char)
   end
 end
