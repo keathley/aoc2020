@@ -25,3 +25,4 @@ aoc2020-*.tar
 
 # Temporary files for e.g. tests
 /tmp
+rust/target
