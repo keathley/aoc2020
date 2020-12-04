@@ -1,10 +1,12 @@
 defmodule Day4 do
   @input File.read!(Path.absname("priv/day4.txt", Application.app_dir(:aoc2020)))
 
-  @attr_re ~r/([a-z]{3}):(.*)$/
-  @height_re ~r/(\d+)(in|cm)$/
-
   defmodule Passport do
+    @attr_re ~r/([a-z]{3}):(.*)$/
+    @height_re ~r/(\d+)(in|cm)$/
+    @pid_re ~r/^\d{9}$/
+    @hex_re ~r/^#([a-z0-9]{6})$/
+
     defstruct [
       byr: nil,
       iyr: nil,
@@ -16,7 +18,41 @@ defmodule Day4 do
       cid: nil,
     ]
 
-    def new(list) do
+    def parse(list) do
+      list
+      |> Enum.map(&parse_attr/1)
+      |> new()
+    end
+
+    defp parse_attr(attr) do
+      [_original, attr, v] = Regex.run(@attr_re, attr)
+      attr = String.to_atom(attr)
+
+      v = case attr do
+        :byr -> to_i(v)
+        :iyr -> to_i(v)
+        :eyr -> to_i(v)
+        :hgt ->
+          case Regex.run(@height_re, v) do
+            [_original, num, unit]  ->
+              {String.to_integer(num), String.to_atom(unit)}
+
+            _ ->
+              nil
+          end
+        :hcl ->
+          if Regex.match?(@hex_re, v), do: v
+        :ecl ->
+          if v in ~w(amb blu brn gry grn hzl oth), do: String.to_atom(v)
+        :pid ->
+          if Regex.match?(@pid_re, v), do: v
+        :cid -> v
+      end
+
+      {attr, v}
+    end
+
+    defp new(list) do
       struct(__MODULE__, list)
     end
 
@@ -30,6 +66,13 @@ defmodule Day4 do
       pass.pid
     end
 
+    defp to_i(s) do
+      String.to_integer(s)
+    rescue
+      _ ->
+        nil
+    end
+
     # byr (Birth Year) - four digits; at least 1920 and at most 2002.
     # iyr (Issue Year) - four digits; at least 2010 and at most 2020.
     # eyr (Expiration Year) - four digits; at least 2020 and at most 2030.
@@ -41,20 +84,29 @@ defmodule Day4 do
     # pid (Passport ID) - a nine-digit number, including leading zeroes.
     # cid (Country ID) - ignored, missing or not.
     def valid?(pass) do
-      fields_present?(pass)
-      pass.byr
+      fields_present?(pass) &&
+      (1920 <= pass.byr && pass.byr <= 2002) &&
+      (2010 <= pass.iyr && pass.iyr <= 2020) &&
+      (2020 <= pass.eyr && pass.eyr <= 2030) &&
+      valid_height?(pass)
+    end
 
+    defp valid_height?(%{hgt: {val, unit}}) do
+      case unit do
+        :cm -> 150 <= val && val <= 193
+        :in -> 59  <= val && val <= 76
+      end
     end
   end
 
   def solve do
     passports = parse(@input)
 
-    # bad count
+    # This count is now broken because we do validation in the parsing logic
+    # as the Dark Lord intended.
     count = Enum.count(passports, &Passport.fields_present?/1)
     IO.puts "Part 1: #{count}"
 
-    # Good count
     count2 = Enum.count(passports, &Passport.valid?/1)
     IO.puts "Part2: #{count2}"
   end
@@ -67,23 +119,7 @@ defmodule Day4 do
     |> Enum.map(fn group ->
       group
       |> Enum.flat_map(fn str -> String.split(str) end)
-      |> Enum.map(fn attr ->
-        [_original, attr, v] = Regex.run(@attr_re, attr)
-        attr = String.to_atom(attr)
-
-        v = case attr do
-          :byr -> String.to_integer(v)
-          :iyr -> String.to_integer(v)
-          :eyr -> String.to_integer(v)
-          :hgt ->
-            [_original, num, unit] = Regex.run(@height_re, v)
-            {String.to_integer(num), String.to_atom(unit)}
-          :hcl -> v
-        end
-
-        {attr, v}
-      end)
-      |> Passport.new()
+      |> Passport.parse()
     end)
   end
 end
