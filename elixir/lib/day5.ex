@@ -5,7 +5,6 @@ defmodule Day5 do
     ids =
       @input
       |> String.split()
-      |> IO.inspect(label: "Split")
       |> Enum.map(&to_id/1)
 
     part1 = Enum.max(ids)
