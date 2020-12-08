@@ -9,7 +9,7 @@ defmodule Day8 do
       ops: ops,
       eip: 0,
       acc: 0,
-      seen: MapSet.new(),
+      seen: [],
       exit_loc: Enum.count(ops),
     }
     t = Task.async(fn -> interpret(state) end)
@@ -28,30 +28,28 @@ defmodule Day8 do
     IO.puts "Part 2: #{result}"
   end
 
-  def interpret(%{eip: eip, exit_loc: eip, acc: acc}) do
-    {:done, acc}
-  end
-  def interpret(%{ops: ops, eip: eip, acc: acc}=state) do
-    if MapSet.member?(state.seen, eip) do
-      throw :infinite
-    end
-
-    state = update_in(state, [:seen], & MapSet.put(&1, eip))
-    op    = at(ops, eip)
-
-    case op do
-      {:nop, _} ->
-        interpret(%{state | eip: eip+1})
-
-      {:acc, val} ->
-        interpret(%{state | eip: eip+1, acc: acc+val})
-
-      {:jmp, val} ->
-        interpret(%{state | eip: eip+val})
-    end
-  catch
-    :infinite ->
+  # If eip has reached the exit loc, we know that we're done. Otherwise, if
+  # we've already seen an eip before, we know that we're in a loop so we say that
+  # we're going infinite. Otherwise we proceed as normal.
+  def interpret(%{eip: eip, exit_loc: eip, acc: acc}), do: {:done, acc}
+  def interpret(%{ops: ops, eip: eip, seen: seen, acc: acc}=state) do
+    if eip in seen do
       {:infinite, acc}
+    else
+      state = %{state | seen: [eip | seen]}
+      op    = at(ops, eip)
+
+      case op do
+        {:nop, _} ->
+          interpret(%{state | eip: eip+1})
+
+        {:acc, val} ->
+          interpret(%{state | eip: eip+1, acc: acc+val})
+
+        {:jmp, val} ->
+          interpret(%{state | eip: eip+val})
+      end
+    end
   end
 
   defp mutate_instructions(%{ops: ops}=state) do
