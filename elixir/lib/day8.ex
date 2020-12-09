@@ -5,7 +5,6 @@ defmodule Day8 do
   def solve(input \\ @input) do
     ops   = parse(input)
     state = %{
-      parent: self(),
       ops: ops,
       eip: 0,
       acc: 0,
